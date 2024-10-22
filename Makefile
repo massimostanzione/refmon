@@ -19,9 +19,12 @@ mod_refmon-y += probing/probing.o probing/probing-handlers.o
 mod_refmon-y += syscalls/safety.o syscalls/syscalls.o syscalls/syscalls-handlers.o
 
 all: clean
-	#gcc -o probing/probing.o probing/*
+	make -C /lib/modules/$(shell uname -r)/build M=$(PWD) modules
+
+debug: clean
 	make -C /lib/modules/$(shell uname -r)/build M=$(PWD) modules
 	EXTRA_CFLAGS="$(DEBUG_CFLAGS)"
+	
 
 load-fs:
 	make -C io/refmonfs clean all
@@ -62,12 +65,14 @@ reload: unmount all mount
 
 run: clean load-fs load-usctm load-user all mount
 
+run-debug: clean load-fs load-usctm load-user debug mount
+
 teardown: unmount clean unload-user unload-usctm unload-fs
 
 test-reload:
 	make -C user clean test install
 
-test:
+test: test-reload
 	make -C ./test all
 
 run-test: run test
