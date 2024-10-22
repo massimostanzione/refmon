@@ -103,11 +103,11 @@ static MunitResult test_add_invalid(const MunitParameter params[],
 }
 
 static MunitTest ts_add_tests[] = {
-	{ "valid", test_add_valid, setup, teardown, MUNIT_TEST_OPTION_NONE,
+	{ "valid", test_add_valid, setup,  (void*)teardown, MUNIT_TEST_OPTION_NONE,
 	  params_paths_valid },
-	{ "duplicates", test_add_duplicates, setup, teardown,
+	{ "duplicates", test_add_duplicates, setup,  (void*)teardown,
 	  MUNIT_TEST_OPTION_NONE, params_paths_valid },
-	{ "invalid", test_add_invalid, setup, teardown, MUNIT_TEST_OPTION_NONE,
+	{ "invalid", test_add_invalid, setup,  (void*)teardown, MUNIT_TEST_OPTION_NONE,
 	  params_paths_invalid },
 	NULL
 };

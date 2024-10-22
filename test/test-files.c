@@ -139,7 +139,7 @@ static MunitResult test_files_proc_syscallcodes(const MunitParameter params[],
 }
 
 static MunitTest ts_files_tests[] = {
-	{ "proc-list", test_files_proc_list, setup, teardown,
+	{ "proc-list", test_files_proc_list, setup, (void*)teardown,
 	  MUNIT_TEST_OPTION_NONE, params_states_valid },
 	{ "proc-state", test_files_proc_state, NULL, NULL,
 	  MUNIT_TEST_OPTION_NONE, params_states_valid },

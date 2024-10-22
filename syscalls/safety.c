@@ -12,7 +12,7 @@ int is_euid_root(void)
 	euid = current_euid();
 	if (euid.val < 0) {
 		pr_err("%s: could not retrieve current euid (ret=%d)",
-		       REFMON_MODNAME, euid);
+		       REFMON_MODNAME, (int)euid);
 		return euid.val;
 	}
 	return uid_eq(euid, GLOBAL_ROOT_UID);

@@ -76,7 +76,7 @@ static MunitResult test_flush_invalid(const MunitParameter params[],
 	return MUNIT_OK;
 }
 static MunitTest ts_flush_tests[] = {
-	{ "valid", test_flush_valid, setup, teardown, MUNIT_TEST_OPTION_NONE,
+	{ "valid", test_flush_valid, setup, (void*)teardown, MUNIT_TEST_OPTION_NONE,
 	  params_states_valid },
 	{ "invalid", test_flush_invalid, NULL, NULL, MUNIT_TEST_OPTION_NONE,
 	  params_paths_invalid },

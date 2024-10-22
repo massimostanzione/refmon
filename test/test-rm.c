@@ -110,11 +110,11 @@ static MunitResult test_rm_invalid(const MunitParameter params[], void *fixture)
 }
 
 static MunitTest ts_rm_tests[] = {
-	{ "valid", test_rm_valid, setup, teardown, MUNIT_TEST_OPTION_NONE,
+	{ "valid", test_rm_valid, setup, (void*)teardown, MUNIT_TEST_OPTION_NONE,
 	  params_paths_valid },
-	{ "duplicates", test_rm_duplicates, setup, teardown,
+	{ "duplicates", test_rm_duplicates, setup, (void*)teardown,
 	  MUNIT_TEST_OPTION_NONE, params_paths_valid },
-	{ "invalid", test_rm_invalid, setup, teardown, MUNIT_TEST_OPTION_NONE,
+	{ "invalid", test_rm_invalid, setup, (void*)teardown, MUNIT_TEST_OPTION_NONE,
 	  params_paths_invalid },
 	NULL
 };

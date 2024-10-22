@@ -162,9 +162,9 @@ static MunitResult test_operations_dirs(const MunitParameter params[],
 }
 
 static MunitTest ts_operations_tests[] = {
-	{ "files", test_operations_files, setup, teardown,
+	{ "files", test_operations_files, setup, (void*)teardown,
 	  MUNIT_TEST_OPTION_NONE, params_paths_files },
-	{ "dir", test_operations_dirs, setup, teardown, MUNIT_TEST_OPTION_NONE,
+	{ "dir", test_operations_dirs, setup, (void*)teardown, MUNIT_TEST_OPTION_NONE,
 	  params_paths_dirs },
 	NULL
 };

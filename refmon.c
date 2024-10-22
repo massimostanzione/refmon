@@ -45,7 +45,7 @@ void cleanup_module()
 	flush_syscalls();
 	flush_probes();
 
-	pr_cont("done, bye", REFMON_MODNAME);
+	pr_cont("done, bye");
 }
 
 int init_module(void)
