@@ -157,10 +157,10 @@ int cmd_help()
 	printf("Reference monitor, for enhanced file access protection.\n\n");
 	printf("Options:\n");
 	printf("  -s, --set-state <STATE>     Set state to STATE\n");
-	printf("      --off                   Set state to OFF (alias for --_set_state OFF)\n");
-	printf("      --on                    Set state to ON (alias for --_set_state ON)\n");
-	printf("      --recoff                Set state to REC-OFF (alias for --_set_state REC-OFF)\n");
-	printf("      --recon                 Set state to REC-ON (alias for --_set_state REC-ON)\n");
+	printf("      --off                   Set state to OFF (alias for --set-state OFF)\n");
+	printf("      --on                    Set state to ON (alias for --set-state ON)\n");
+	printf("      --recoff                Set state to REC-OFF (alias for --set-state REC-OFF)\n");
+	printf("      --recon                 Set state to REC-ON (alias for --set-state REC-ON)\n");
 	printf("  -a, --reconf-add <PATH>     Add PATH to refmon registry\n");
 	printf("  -r, --reconf-rm <PATH>      Remove PATH from refmon registry\n");
 	printf("      --print-state           Print current state\n");
