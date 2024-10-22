@@ -7,10 +7,13 @@
 
 int krp_hook_tail(struct kretprobe_instance *ri, struct pt_regs *regs)
 {
-	pr_debug("%s: tail hook", REFMON_MODNAME);
+	int ret;
 	unsigned long flags;
+	
+	pr_debug("%s: tail hook", REFMON_MODNAME);
 	spin_lock_irqsave(&the_instance.spinlock_probing, flags);
-	int ret = REFMON_RETVAL_DEFAULT;
+	
+	ret = REFMON_RETVAL_DEFAULT;
 	regs_set_return_value(regs, -EACCES);
 
 	if (regs->ax != -EACCES) {
@@ -35,7 +38,6 @@ tail:
 unsigned int get_accmods(struct file *file)
 {
 	int flags = (int)file->f_flags;
-	fmode_t mode = file->f_mode;
 	unsigned int accmod = flags & O_ACCMODE;
 	return accmod;
 }
@@ -49,16 +51,22 @@ int is_write_acc(struct file *filestruct)
 
 int krp_hook_open(struct kretprobe_instance *ri, struct pt_regs *regs)
 {
+	struct path *path;
+	char *dentry_path, *absolute_path;
+	struct path_identifier id;
+	unsigned long absolute_ino;
+	struct file *file;
+	
 	pr_debug("%s: krp hook open", REFMON_MODNAME);
-	const struct path *path = (const struct path *)regs->di;
-	char *dentry_path = extract_path_from_dentry(path->dentry);
+	path = (struct path *)regs->di;
+	dentry_path = extract_path_from_dentry(path->dentry);
 	if (dentry_path == NULL) {
 		pr_debug(
 			"%s: path from dentry not found (it is not necessary an error)",
 			REFMON_MODNAME);
 		goto tail;
 	}
-	char *absolute_path =
+	absolute_path =
 		resolve_path_alloc(dentry_path, REFMON_FSUTILS_RESOLVE_LINKS);
 	if (absolute_path == NULL) {
 		pr_debug(
@@ -67,14 +75,13 @@ int krp_hook_open(struct kretprobe_instance *ri, struct pt_regs *regs)
 		goto tail;
 	}
 
-	unsigned long absolute_ino = extract_ino_no_from_path(absolute_path);
+	absolute_ino = extract_ino_no_from_path(absolute_path);
 
-	struct path_identifier id = { absolute_path, absolute_ino };
+	id.path = absolute_path;
+	id.ino_no = absolute_ino;
 
-	struct file *file = (struct file *)regs->si;
-	int flags = (int)file->f_flags;
-	fmode_t mode = file->f_mode;
-	unsigned int acc_mode = flags & O_ACCMODE;
+	file = (struct file *)regs->si;
+	
 	if (is_write_acc(file) && is_eligible(id))
 		return KRP_TO_TAILHOOK;
 tail:
@@ -82,8 +89,12 @@ tail:
 }
 int krp_hook_rm(struct kretprobe_instance *ri, struct pt_regs *regs)
 {
-	pr_debug("%s: krp hook rm", REFMON_MODNAME);
 	struct dentry *dentry;
+	char *pfd, *absolute_path;
+	unsigned long absolute_ino;
+	struct path_identifier id;
+	
+	pr_debug("%s: krp hook rm", REFMON_MODNAME);
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 12, 0)
 	dentry = (struct dentry *)regs->dx;
@@ -91,7 +102,7 @@ int krp_hook_rm(struct kretprobe_instance *ri, struct pt_regs *regs)
 	dentry = (struct dentry *)regs->si;
 #endif
 
-	char *pfd = extract_path_from_dentry(dentry);
+	pfd = extract_path_from_dentry(dentry);
 	if (pfd == NULL) {
 		pr_debug(
 			"%s: path from dentry not found (it is not necessary an error)",
@@ -99,7 +110,7 @@ int krp_hook_rm(struct kretprobe_instance *ri, struct pt_regs *regs)
 		goto tail;
 	}
 
-	char *absolute_path =
+	absolute_path =
 		resolve_path_alloc(pfd, REFMON_FSUTILS_RESOLVE_LINKS);
 	if (absolute_path == NULL) {
 		pr_debug(
@@ -108,13 +119,15 @@ int krp_hook_rm(struct kretprobe_instance *ri, struct pt_regs *regs)
 		goto tail;
 	}
 
-	unsigned long absolute_ino = extract_ino_no_from_path(absolute_path);
+	absolute_ino = extract_ino_no_from_path(absolute_path);
 	if (absolute_ino == REFMON_NO_INO_NO) {
 		pr_debug("%s: cannot extract inode number", REFMON_MODNAME);
 		goto tail;
 	}
 
-	struct path_identifier id = { absolute_path, absolute_ino };
+	id.path = absolute_path;
+	id.ino_no = absolute_ino;
+	
 	if (is_eligible(id))
 
 		return KRP_TO_TAILHOOK;
@@ -125,16 +138,19 @@ tail:
 
 int krp_hook_mkdir(struct kretprobe_instance *ri, struct pt_regs *regs)
 {
+	struct dentry *dentry;
+	char *pfd, *absolute_path;
+	struct path_identifier id;
+	
 	pr_debug("%s: krp hook mkdir", REFMON_MODNAME);
 
-	struct dentry *dentry;
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 12, 0)
 	dentry = (struct dentry *)regs->dx;
 #else
 	dentry = (struct dentry *)regs->si;
 #endif
 
-	char *pfd = extract_path_from_dentry(dentry);
+	pfd = extract_path_from_dentry(dentry);
 	if (pfd == NULL) {
 		pr_debug(
 			"%s: path from dentry not found (it is not necessary an error)",
@@ -142,7 +158,7 @@ int krp_hook_mkdir(struct kretprobe_instance *ri, struct pt_regs *regs)
 		goto tail;
 	}
 
-	char *absolute_path = resolve_path_alloc(
+	absolute_path = resolve_path_alloc(
 		pfd, REFMON_FSUTILS_RESOLVE_LINKS |
 			     REFMON_FSUTILS_IGNORE_ABSOLUTE_PATHS);
 	if (absolute_path == NULL) {
@@ -152,8 +168,9 @@ int krp_hook_mkdir(struct kretprobe_instance *ri, struct pt_regs *regs)
 		goto tail;
 	}
 
-	struct path_identifier id = { absolute_path, REFMON_NO_INO_NO };
-
+	id.path = absolute_path;
+	id.ino_no = absolute_ino;
+	
 	if (is_eligible(id) == 1) {
 		return KRP_TO_TAILHOOK;
 	}

@@ -36,9 +36,10 @@ tail:
 struct registry_entry *search_entry(struct path_identifier *id,
 				    int search_criteria)
 {
-	int ret = REFMON_RETVAL_DEFAULT;
+	struct registry_entry *curr_node;
+	
 	if (list_empty(&the_instance.registry)) {
-		pr_info("%s: list is empty, node search skipped. (node.path='%s', node.ino_no=%ul).",
+		pr_info("%s: list is empty, node search skipped. (node.path='%s', node.ino_no=%lu).",
 			REFMON_MODNAME, id->path, id->ino_no);
 		goto tail_notfound;
 	}
@@ -58,7 +59,6 @@ struct registry_entry *search_entry(struct path_identifier *id,
 		goto tail_notfound;
 	}
 
-	struct registry_entry *curr_node;
 	list_for_each_entry(curr_node, &the_instance.registry,
 			    registry_noderef) {
 		if (((search_criteria & REFMON_SEARCH_CRIT_REGISTERED_PATH) &&
@@ -85,7 +85,7 @@ int is_resolved(const char *path)
 
 char *resolve_path_alloc(const char *input_path, int flags)
 {
-	char *ret_path, *temp;
+	char *ret_path, *temp, *working_copy;
 	struct path path;
 	int ret = REFMON_RETVAL_DEFAULT;
 
@@ -96,7 +96,7 @@ char *resolve_path_alloc(const char *input_path, int flags)
 		goto tail_err;
 	}
 
-	char *working_copy = kstrdup(input_path, GFP_KERNEL);
+	working_copy = kstrdup(input_path, GFP_KERNEL);
 	if (working_copy == NULL) {
 		pr_err("%s: error while duplicating input path string",
 		       REFMON_MODNAME);
@@ -220,6 +220,7 @@ tail:
 struct registry_entry *find_entry_by_regpath_alloc(const char *registered_path)
 {
 	struct registry_entry *ret = NULL;
+	struct path_identifier id;
 	char *solved = resolve_path_alloc(registered_path,
 					  REFMON_FSUTILS_IGNORE_ABSOLUTE_PATHS);
 	if (solved == NULL) {
@@ -228,10 +229,12 @@ struct registry_entry *find_entry_by_regpath_alloc(const char *registered_path)
 		goto tail;
 	}
 
-	struct path_identifier id = { solved, REFMON_NO_INO_NO };
+	id.path = solved;
+	id.ino_no = REFMON_NO_INO_NO;
+	
 	ret = search_entry(&id, REFMON_SEARCH_CRIT_REGISTERED_PATH);
 	if (ret == NULL) {
-		pr_err("%s: error while trying to search entry for id (id.path='%s', id.ino=%d)",
+		pr_err("%s: error while trying to search entry for id (id.path='%s', id.ino=%ld)",
 		       REFMON_MODNAME, id.path, id.ino_no);
 		goto tail;
 	}

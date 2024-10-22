@@ -8,7 +8,8 @@
 
 int is_euid_root(void)
 {
-	kuid_t euid = current_euid();
+	kuid_t euid;
+	euid = current_euid();
 	if (euid.val < 0) {
 		pr_err("%s: could not retrieve current euid (ret=%d)",
 		       REFMON_MODNAME, euid);
@@ -69,6 +70,7 @@ int safety_checks(int checks, char *arg)
 {
 	int ret = REFMON_RETVAL_DEFAULT, caught = 0;
 	char *safe_password = NULL;
+	
 	if (checks & REFMON_SAFETY_CHECK_NONE) {
 		pr_debug("%s: SAFETY CHECK - none requested", REFMON_MODNAME);
 		ret = 0;

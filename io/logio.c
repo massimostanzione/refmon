@@ -9,24 +9,28 @@ spinlock_t spin;
 
 void defer(struct work_struct *work)
 {
+	struct log_dataset *log_dataset_inst;
+	char out[REFMON_LOGLEN], *hash;
+	struct file *file;
+	ssize_t outb;
+	
 	spin_lock(&spin);
-	struct log_dataset *log_dataset_inst =
+	log_dataset_inst =
 		container_of(work, struct deferred_work, work)->log_dataset;
 
-	char *hash = hashgen_filecont(log_dataset_inst->prog_path);
+	hash = hashgen_filecont(log_dataset_inst->prog_path);
 	if (hash == NULL) {
 		pr_err("%s: error while trying to generate file hash",
 		       REFMON_MODNAME);
 		goto tail;
 	}
 
-	char out[REFMON_LOGLEN];
 	snprintf(out, sizeof(out), "%d\t%d\t%u\t%u\t%s\t%s",
 		 log_dataset_inst->tgid, log_dataset_inst->tid,
 		 log_dataset_inst->uid, log_dataset_inst->euid,
 		 log_dataset_inst->prog_path, hash);
 
-	struct file *file = filp_open(REFMON_FILE_LOG_ABSOLUTE,
+	file = filp_open(REFMON_FILE_LOG_ABSOLUTE,
 				      O_WRONLY | O_CREAT | O_APPEND,
 				      S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
 
@@ -36,7 +40,7 @@ void defer(struct work_struct *work)
 		goto tail;
 	}
 
-	ssize_t outb = kernel_write(file, out, strlen(out), &file->f_pos);
+	outb = kernel_write(file, out, strlen(out), &file->f_pos);
 	if (outb < 0) {
 		pr_err("%s: overflow while writing towards log file",
 		       REFMON_MODNAME);

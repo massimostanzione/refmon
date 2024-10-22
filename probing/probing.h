@@ -14,10 +14,10 @@ extern int probing_state;
 extern struct kretprobe krp_vfs_open, krp_vfs_write, krp_vfs_unlink,
 	krp_vfs_mkdir, krp_vfs_rmdir, krp_vfs_fsync, krp_sec_ino_create;
 
-static int krp_hook_open(struct kretprobe_instance *ri, struct pt_regs *regs);
-static int krp_hook_rm(struct kretprobe_instance *ri, struct pt_regs *regs);
-static int krp_hook_tail(struct kretprobe_instance *ri, struct pt_regs *regs);
-static int krp_hook_mkdir(struct kretprobe_instance *ri, struct pt_regs *regs);
+ int krp_hook_open(struct kretprobe_instance *ri, struct pt_regs *regs);
+ int krp_hook_rm(struct kretprobe_instance *ri, struct pt_regs *regs);
+ int krp_hook_tail(struct kretprobe_instance *ri, struct pt_regs *regs);
+ int krp_hook_mkdir(struct kretprobe_instance *ri, struct pt_regs *regs);
 
 int probing_update(int desired_probing_state);
 int init_probes(void);

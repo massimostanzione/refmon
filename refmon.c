@@ -11,8 +11,9 @@ module_param(the_syscall_table, ulong, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP);
 
 int init_password(void)
 {
+	char *enc;
 	pr_debug("%s: initializing password... ", REFMON_MODNAME);
-	char *enc = hashgen_str(REFMON_DEFAULT_PASSWORD);
+	enc = hashgen_str(REFMON_DEFAULT_PASSWORD);
 	if (enc == NULL) {
 		pr_err("%s: error while hashing password", REFMON_MODNAME);
 		return -ENOTRECOVERABLE;
@@ -36,7 +37,7 @@ int init_instance(void)
 	return 0;
 }
 
-void cleanup_module(void)
+void cleanup_module()
 {
 	pr_info("%s: removing...", REFMON_MODNAME);
 
@@ -49,8 +50,8 @@ void cleanup_module(void)
 
 int init_module(void)
 {
-	pr_info("%s: initializing.", REFMON_MODNAME);
 	int ret;
+	pr_info("%s: initializing.", REFMON_MODNAME);
 
 	ret = init_password();
 	if (ret != 0) {
@@ -100,3 +101,4 @@ abort:
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Massimo Stanzione");
 MODULE_DESCRIPTION("Reference monitor, for enhanced file access protection.");
+

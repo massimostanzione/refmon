@@ -7,8 +7,10 @@
 
 int probing_off(void)
 {
+	int ret;
 	pr_debug("%s: trying to STOP probing...", REFMON_MODNAME);
-	int ret = REFMON_RETVAL_DEFAULT;
+	
+	ret = REFMON_RETVAL_DEFAULT;
 
 	disable_kretprobe(&krp_vfs_open);
 	disable_kretprobe(&krp_vfs_unlink);
@@ -16,15 +18,16 @@ int probing_off(void)
 	disable_kretprobe(&krp_vfs_rmdir);
 	pr_debug("%s: probing OFF", REFMON_MODNAME);
 	ret = 0;
-tail:
+	
 	pr_cont(" done");
 	return ret;
 }
 
 int probing_on(void)
 {
+	int ret;
 	pr_debug("%s: trying to start probing...", REFMON_MODNAME);
-	int ret = REFMON_RETVAL_DEFAULT;
+	ret = REFMON_RETVAL_DEFAULT;
 
 	enable_kretprobe(&krp_vfs_open);
 	enable_kretprobe(&krp_vfs_unlink);
@@ -34,7 +37,6 @@ int probing_on(void)
 	pr_cont(" done");
 	ret = 0;
 
-tail:
 	return ret;
 }
 

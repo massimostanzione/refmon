@@ -34,11 +34,12 @@ ssize_t _read_proc(struct file *file, char __user *buf, size_t count,
 		   loff_t *pos, char *name)
 {
 	char out[PAGE_SIZE];
+	struct registry_entry *nodeP;
+	
 	int ret = 0, decrement = PAGE_SIZE * sizeof(char);
 
 	if (MATCH_STRING(name, REFMON_FILE_REGISTRY)) {
 		SPIN_INSTANCE_LOCK
-		struct registry_entry *nodeP;
 		list_for_each_entry(nodeP, &the_instance.registry,
 				    registry_noderef) {
 			ret = snprintf(out + ret, decrement,

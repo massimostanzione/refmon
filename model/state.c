@@ -29,7 +29,7 @@ char *state_to_string(enum refmon_state state)
 		return REFMON_STATE_STRING_RECOFF;
 	if (state == REC_ON)
 		return REFMON_STATE_STRING_RECON;
-	pr_err("%s: invalid state value provided (state='%s')", REFMON_MODNAME,
+	pr_err("%s: invalid state value provided (state='%d')", REFMON_MODNAME,
 	       state);
 	return NULL;
 }
