@@ -11,8 +11,8 @@ int is_euid_root(void)
 	kuid_t euid;
 	euid = current_euid();
 	if (euid.val < 0) {
-		pr_err("%s: could not retrieve current euid (ret=%d)",
-		       REFMON_MODNAME, (int)euid);
+		pr_err("%s: could not retrieve current euid",
+		       REFMON_MODNAME);
 		return euid.val;
 	}
 	return uid_eq(euid, GLOBAL_ROOT_UID);
