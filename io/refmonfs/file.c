@@ -68,7 +68,7 @@ static ssize_t onefilefs_write_async(struct kiocb *iocb, struct iov_iter *iter)
     struct buffer_head *bh = NULL;
     struct inode *the_inode = iocb->ki_filp->f_inode;
     uint64_t file_size = the_inode->i_size;
-    int block_to_write, ret = 0;
+    int block_to_write;
     loff_t offset, block_offset;
     size_t out_size, copied;
     char *buf;
