@@ -68,7 +68,7 @@ int check_reconf(void)
 
 int safety_checks(int checks, char *arg)
 {
-	int ret = REFMON_RETVAL_DEFAULT, caught = 0;
+	int ret = REFMON_RETVAL_DEFAULT, caught = 0, is_root = REFMON_RETVAL_DEFAULT;
 	char *safe_password = NULL;
 	
 	if (checks & REFMON_SAFETY_CHECK_NONE) {
@@ -79,7 +79,7 @@ int safety_checks(int checks, char *arg)
 	if (checks & REFMON_SAFETY_CHECK_ROOT) {
 		pr_debug("%s: SAFETY CHECK - root (euid)", REFMON_MODNAME);
 		caught++;
-		int is_root = is_euid_root();
+		is_root = is_euid_root();
 		if (is_root < 0) {
 			ret = -EINVAL;
 			goto tail;

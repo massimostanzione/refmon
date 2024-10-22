@@ -61,6 +61,7 @@ long sc_addr_flush = (unsigned long)__x64_sys_flush;
 
 int init_syscalls(void)
 {
+	int i, ret = REFMON_RETVAL_DEFAULT;
 	if (the_syscall_table == 0x0) {
 		pr_alert(
 			"%s: cannot manage sys_call_table address set to 0x0, aborting.",
@@ -78,7 +79,6 @@ int init_syscalls(void)
 	new_sys_call_array[2] = (unsigned long)sc_addr_reconf_rm;
 	new_sys_call_array[3] = (unsigned long)sc_addr_flush;
 
-	int ret = REFMON_RETVAL_DEFAULT;
 	ret = get_entries(restore, HACKED_ENTRIES,
 			  (unsigned long *)the_syscall_table, &the_ni_syscall);
 
@@ -90,7 +90,6 @@ int init_syscalls(void)
 
 	unprotect_memory();
 
-	int i;
 	for (i = 0; i < HACKED_ENTRIES; i++) {
 		((unsigned long *)the_syscall_table)[restore[i]] =
 			(unsigned long)new_sys_call_array[i];
@@ -110,9 +109,10 @@ int init_syscalls(void)
 
 void flush_syscalls(void)
 {
+	int i;
+	
 	pr_info("%s: flushing syscalls... ", REFMON_MODNAME);
 
-	int i;
 	unprotect_memory();
 	for (i = 0; i < HACKED_ENTRIES; i++) {
 		((unsigned long *)the_syscall_table)[restore[i]] =

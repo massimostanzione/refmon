@@ -68,11 +68,10 @@ static ssize_t onefilefs_write_async(struct kiocb *iocb, struct iov_iter *iter)
     struct buffer_head *bh = NULL;
     struct inode *the_inode = iocb->ki_filp->f_inode;
     uint64_t file_size = the_inode->i_size;
-    int block_to_write;
-    loff_t offset;
+    int block_to_write, ret = 0;
+    loff_t offset, block_offset;
     size_t out_size, copied;
     char *buf;
-    int ret = 0;
 
     printk("%s: write (async) operation called with count %zu - and offset %lld (the current file size is %lld)",
            REFMONFS_MODNAME, iov_iter_count(iter), iocb->ki_pos, file_size);
@@ -83,7 +82,7 @@ static ssize_t onefilefs_write_async(struct kiocb *iocb, struct iov_iter *iter)
 
     out_size += 1;
 
-    loff_t block_offset = offset % DEFAULT_BLOCK_SIZE;
+    block_offset = offset % DEFAULT_BLOCK_SIZE;
 
     block_to_write = offset / DEFAULT_BLOCK_SIZE + DEFAULT_INO_SIZE;
 

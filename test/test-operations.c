@@ -59,7 +59,7 @@ void reset()
 	setup(NULL, NULL);
 }
 
-int write_to_file_test(char *file)
+int write_to_file_test(const char *file)
 {
 	FILE *fp = fopen(file, "w");
 	if (fp == NULL) {

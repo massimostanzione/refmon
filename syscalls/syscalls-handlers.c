@@ -30,7 +30,10 @@ int _add_file(char *path)
 {
 	int ret = REFMON_RETVAL_DEFAULT;
 	char *registered_path, *resolved_path;
-
+	unsigned long ino_registered, ino_resolved;
+	struct registry_entry *node;
+	struct path_identifier registered, resolved;
+	
 	registered_path = kmalloc(PATH_MAX * sizeof(char), GFP_ATOMIC);
 	if (registered_path == NULL) {
 		pr_err("%s: error while trying kmalloc", REFMON_MODNAME);
@@ -72,7 +75,7 @@ int _add_file(char *path)
 		goto tail;
 	}
 
-	unsigned long ino_registered = extract_ino_no_from_path(path);
+	ino_registered = extract_ino_no_from_path(path);
 	if (ino_registered == REFMON_NO_INO_NO) {
 		pr_err("%s: error while trying to extract inode number - maybe file does not exist (path='%s')",
 		       REFMON_MODNAME, path);
@@ -80,7 +83,7 @@ int _add_file(char *path)
 		goto tail;
 	}
 
-	unsigned long ino_resolved = extract_ino_no_from_path(resolved_path);
+	ino_resolved = extract_ino_no_from_path(resolved_path);
 	if (ino_resolved == REFMON_NO_INO_NO) {
 		pr_err("%s: error while trying to extract inode number - maybe file does not exist (path='%s')",
 		       REFMON_MODNAME, path);
@@ -88,8 +91,7 @@ int _add_file(char *path)
 		goto tail;
 	}
 
-	struct registry_entry *node =
-		kmalloc(sizeof(struct registry_entry), GFP_ATOMIC);
+	node = kmalloc(sizeof(struct registry_entry), GFP_ATOMIC);
 	if (node == NULL) {
 		pr_err("%s: error while trying kmalloc for registry node",
 		       REFMON_MODNAME);
@@ -97,9 +99,12 @@ int _add_file(char *path)
 		goto tail;
 	}
 
-	struct path_identifier registered = { registered_path, ino_registered };
-	struct path_identifier resolved = { resolved_path, ino_resolved };
-
+	registered.path = registered_path;
+	registered.ino_no = ino_registered;
+	
+	resolved.path = resolved_path;
+	resolved.ino_no = ino_resolved;
+	
 	node->registered = registered;
 	node->resolved = resolved;
 
@@ -113,9 +118,9 @@ tail:
 
 int do_set_state(char __user *new_state)
 {
-	pr_debug("%s: _set_state, param: %s", REFMON_MODNAME, new_state);
-
 	int ret = REFMON_RETVAL_DEFAULT;
+	
+	pr_debug("%s: _set_state, param: %s", REFMON_MODNAME, new_state);
 
 	ret = safety_checks(REFMON_SAFETY_CHECK_ROOT, NULL);
 	if (ret != 0)
@@ -139,17 +144,21 @@ tail:
 
 int do_reconf_add(char __user *path_in, char __user *password_in)
 {
+	int ret = REFMON_RETVAL_DEFAULT;
+	char *safe_path;
+	
 	pr_debug("%s: do_reconf_add, params: %s %s", REFMON_MODNAME, path_in,
 		 password_in);
-	int ret = REFMON_RETVAL_DEFAULT;
+		 
 	ret = safety_checks(REFMON_SAFETY_CHECK_ROOT |
 				    REFMON_SAFETY_CHECK_RECONF |
 				    REFMON_SAFETY_CHECK_PASSWORD,
 			    password_in);
+			    
 	if (ret != 0)
 		goto tail;
 
-	char *safe_path = sanitize_user_input_alloc(path_in);
+	safe_path = sanitize_user_input_alloc(path_in);
 	if (safe_path == NULL) {
 		pr_err("%s: cannot sanitize path, aborting", REFMON_MODNAME);
 		ret = -EINVAL;
@@ -170,16 +179,20 @@ tail:
 
 int do_reconf_rm(char __user *path_in, char __user *password_in)
 {
-	pr_debug("%s: do_reconf_rm, params: %s %s", REFMON_MODNAME, path_in,
-		 password_in);
 	char *safe_path = NULL;
 	int ret = REFMON_RETVAL_DEFAULT;
+	struct registry_entry *found;
+	
+	pr_debug("%s: do_reconf_rm, params: %s %s", REFMON_MODNAME, path_in,
+		 password_in);
 	ret = safety_checks(REFMON_SAFETY_CHECK_ROOT |
 				    REFMON_SAFETY_CHECK_RECONF |
 				    REFMON_SAFETY_CHECK_PASSWORD,
 			    password_in);
+			    
 	if (ret != 0)
 		goto tail;
+		
 	safe_path = sanitize_user_input_alloc(path_in);
 	if (safe_path == NULL) {
 		pr_err("%s: cannot sanitize path, aborting", REFMON_MODNAME);
@@ -187,7 +200,7 @@ int do_reconf_rm(char __user *path_in, char __user *password_in)
 		goto tail;
 	}
 
-	struct registry_entry *found = find_entry_by_regpath_alloc(
+	found = find_entry_by_regpath_alloc(
 		resolve_path_alloc(safe_path,
 				   REFMON_FSUTILS_IGNORE_ABSOLUTE_PATHS));
 	if (found == NULL) {
@@ -211,12 +224,15 @@ tail:
 // enabled only with -DDEBUG flag
 int do_flush_registry(char __user *password)
 {
-	pr_debug("%s: do_flush_registry, params: %s", REFMON_MODNAME, password);
 	int ret = REFMON_RETVAL_DEFAULT;
+	struct registry_entry *node, *node_aux;
+	
+	pr_debug("%s: do_flush_registry, params: %s", REFMON_MODNAME, password);
 	ret = safety_checks(REFMON_SAFETY_CHECK_ROOT |
 				    REFMON_SAFETY_CHECK_RECONF |
 				    REFMON_SAFETY_CHECK_PASSWORD,
 			    password);
+			    
 	if (ret != 0)
 		goto tail;
 
@@ -228,7 +244,6 @@ int do_flush_registry(char __user *password)
 		goto tail;
 	}
 
-	struct registry_entry *node, *node_aux;
 	list_for_each_entry_safe(node, node_aux, &the_instance.registry,
 				 registry_noderef) {
 		pr_debug("%s: FLUSH - deleting %s", REFMON_MODNAME,

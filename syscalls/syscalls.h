@@ -11,7 +11,7 @@ typedef struct registered_syscall_codes {
 	int sc_code_reconf_add;
 	int sc_code_reconf_rm;
 	int sc_code_flush;
-};
+} registered_syscall_codes;
 
 extern struct registered_syscall_codes syscall_codes;
 

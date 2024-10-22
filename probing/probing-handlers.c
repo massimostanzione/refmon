@@ -169,7 +169,7 @@ int krp_hook_mkdir(struct kretprobe_instance *ri, struct pt_regs *regs)
 	}
 
 	id.path = absolute_path;
-	id.ino_no = absolute_ino;
+	id.ino_no = REFMON_NO_INO_NO;
 	
 	if (is_eligible(id) == 1) {
 		return KRP_TO_TAILHOOK;
