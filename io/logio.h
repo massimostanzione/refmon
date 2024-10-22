@@ -14,13 +14,13 @@ extern struct log_dataset {
 	uid_t uid;
 	uid_t euid;
 	char *prog_path;
-};
+} log_dataset;
 
 extern struct deferred_work {
 	void *buffer;
 	struct log_dataset *log_dataset;
 	struct work_struct work;
-};
+} deferred_work;
 
 extern int log_handler(void);
 

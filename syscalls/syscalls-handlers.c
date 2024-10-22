@@ -236,7 +236,6 @@ int do_flush_registry(char __user *password)
 	if (ret != 0)
 		goto tail;
 
-	SPIN_INSTANCE_LOCK
 	if (list_empty(&the_instance.registry)) {
 		pr_info("%s: empty list, skipping...", REFMON_MODNAME);
 		SPIN_INSTANCE_UNLOCK
@@ -250,7 +249,7 @@ int do_flush_registry(char __user *password)
 			 node->registered.path);
 		list_del(&node->registry_noderef);
 	}
-	SPIN_INSTANCE_UNLOCK
+	
 	pr_info("%s: register flushed", REFMON_MODNAME);
 	ret = 0;
 tail:

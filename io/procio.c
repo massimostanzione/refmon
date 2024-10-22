@@ -34,81 +34,76 @@ ssize_t _read_proc(struct file *file, char __user *buf, size_t count,
 		   loff_t *pos, char *name)
 {
 	char out[PAGE_SIZE];
+	int out_len = 0, decrement = PAGE_SIZE * sizeof(char), ret_snprintf;
 	struct registry_entry *nodeP;
-	
-	int ret = 0, decrement = PAGE_SIZE * sizeof(char);
-
+		
 	if (MATCH_STRING(name, REFMON_FILE_REGISTRY)) {
 		SPIN_INSTANCE_LOCK
 		list_for_each_entry(nodeP, &the_instance.registry,
 				    registry_noderef) {
-			ret = snprintf(out + ret, decrement,
-				       "- %lu %s -> %lu %s\n",
-				       nodeP->registered.ino_no,
-				       nodeP->registered.path,
-				       nodeP->resolved.ino_no,
-				       nodeP->resolved.path);
+			ret_snprintf = snprintf(out + out_len, decrement,
+						"- %lu %s -> %lu %s\n",
+						nodeP->registered.ino_no,
+						nodeP->registered.path,
+						nodeP->resolved.ino_no,
+						nodeP->resolved.path);
 
-			if (ret < 0) {
+			if (ret_snprintf < 0) {
 				SPIN_INSTANCE_UNLOCK
 				pr_err("%s: error while trying to snprintf to proc file (file='%s')",
 				       REFMON_MODNAME, name);
-				ret = -EIO;
-				goto tail;
+				return -EIO;
 			}
 
-			if (ret >= decrement) {
+			if (ret_snprintf >= decrement) {
 				pr_err("%s: buffer overflow! (file='%s')",
 				       REFMON_MODNAME, name);
 				break;
 			}
 
-			ret += ret;
-			decrement -= ret;
+			out_len += ret_snprintf;
+			decrement -= ret_snprintf;
 		}
 		SPIN_INSTANCE_UNLOCK
 	} else if (MATCH_STRING(name, REFMON_FILE_SYSCALLCODES)) {
-		ret = snprintf(out, sizeof(out), "%d\n%d\n%d\n%d\n",
-			       syscall_codes.sc_code_set_state,
-			       syscall_codes.sc_code_reconf_add,
-			       syscall_codes.sc_code_reconf_rm,
-			       syscall_codes.sc_code_flush);
-		if (ret < 0) {
+		ret_snprintf = snprintf(out, sizeof(out), "%d\n%d\n%d\n%d\n",
+					syscall_codes.sc_code_set_state,
+					syscall_codes.sc_code_reconf_add,
+					syscall_codes.sc_code_reconf_rm,
+					syscall_codes.sc_code_flush);
+		if (ret_snprintf < 0) {
 			pr_err("%s: error while trying to write to proc file (file='%s')",
 			       REFMON_MODNAME, name);
-			ret = -EIO;
-			goto tail;
+			return -EIO;
 		}
 
+		out_len = ret_snprintf;
 	} else if (MATCH_STRING(name, REFMON_FILE_STATE)) {
-		ret = snprintf(out, sizeof(out), "%s\n",
-			       state_to_string(the_instance.state));
-		if (ret < 0) {
+		ret_snprintf = snprintf(out, sizeof(out), "%s\n",
+					state_to_string(the_instance.state));
+		if (ret_snprintf < 0) {
 			pr_err("%s: error while trying to snprintf to proc file (file='%s')",
 			       REFMON_MODNAME, name);
-			ret = -EIO;
-			goto tail;
+			return -EIO;
 		}
-
+		out_len = ret_snprintf;
 	} else {
 		pr_err("%s: invalid procpath provided - that is unexpected! (file='%s')",
 		       REFMON_MODNAME, name);
-		ret = -EINVAL;
-		goto tail;
+		return -EINVAL;
 	}
 
-	if (*pos > 0 || count < ret) {
+	if (*pos > 0 || count < out_len) {
 		return 0;
 	}
 
-	if (copy_to_user(buf, out, ret) != 0) {
+	if (copy_to_user(buf, out, out_len) != 0) {
 		pr_err("%s: error while trying copy_to_user (file='%s')",
 		       REFMON_MODNAME, name);
 		return -EFAULT;
 	}
-	*pos += ret;
-tail:
-	return ret;
+	*pos += out_len;
+	return out_len;
 }
 
 ssize_t read_proc_syscalls(struct file *file, char __user *buf, size_t count,

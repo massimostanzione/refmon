@@ -14,7 +14,7 @@ typedef struct refmon {
 	char *password;
 	spinlock_t spinlock_inst;
 	spinlock_t spinlock_probing;
-};
+} refmon;
 
 extern struct refmon the_instance;
 
