@@ -1,7 +1,7 @@
 # refmon
 *A reference monitor for enhanced file protection*.
 ## What is it?
-`refmon` the final project for the *Advanced Operating Systems (and Systems Security)* course (9 CFU = 9 ETCS), followed at *University of Rome Tor Vergata*. 
+`refmon` is the final project for the *Advanced Operating Systems (and Systems Security)* course (9 CFU = 9 ETCS), followed at *University of Rome Tor Vergata*. 
 It aims to the implementation of a **Linux Kernel Module** for a **Reference Monitor**, according to some specification that you can consult [on the official course site](https://francescoquaglia.github.io/TEACHING/AOS/AA-2023-2024/PROJECTS/project-specification-2023-2024.html).
 
 ## How to run `refmon`
@@ -29,7 +29,7 @@ That's it, you are all set! You can try to add some paths to `refmon`:
 		sudo refmon --set-state REC-ON
 		sudo refmon --reconf-add PATH
     
-... and try to write-access your `PATH`. You should be able to get an error message, *i.e.* `EACCESS` errno.
+... and try to write-access your `PATH`. You should be able to get an error message, *i.e.* `-EACCESS` errno.
 
 ### Keep it calm
 Now that you have enjoyed the *quickstart*, feel free to explore every `refmon` functionality by typing
