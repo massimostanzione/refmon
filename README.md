@@ -41,7 +41,7 @@ A list of all the commands available will be displayed. Use it as your guide!
 
 This project uses the following external modules:
 
- - [*Linux syscall table discoverer*](https://github.com/FrancescoQuaglia/Linux-sys_call_table-discoverer) module, by the lecturer [Francesco Quaglia](https://github.com/FrancescoQuaglia), in order to hack some free kernel entries and use them for `refmon` purposes;
+ - [*Linux syscall table discoverer*](https://github.com/FrancescoQuaglia/Linux-sys_call_table-discoverer) module, by the lecturer [Francesco Quaglia](https://github.com/FrancescoQuaglia), in order to hack some free syscall table entries and use them for `refmon` purposes;
  - [*Munit*](https://github.com/nemequ/munit) test framework, by [nemequ](https://github.com/nemequ), in order to test `refmon` with a lightweight, *nuisance-free* test framework.
 
 ## Can I contribute?
