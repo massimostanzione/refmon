@@ -56,7 +56,7 @@ int init_probes(void)
 	* This may help in every circumstance when you have repeat the same
 	* instructions to all your kretprobes, like what we are doing here.
 	*
-	* In this implementation we only have 6 kretprobes, so it would have
+	* In this implementation we only have 4 kretprobes, so it would have
 	* been a little an overkill to do that.
 	*
 	* Something similar can be done with procfiles (see related files)
