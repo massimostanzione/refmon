@@ -27,6 +27,8 @@ If you want to *just run* the project, follow this simple steps:
 That's it, you are all set! You can try to add some paths to `refmon`:
 
 		sudo refmon --set-state REC-ON
+		
+		# default password is "ciao" - remember to change it afterwards
 		sudo refmon --reconf-add PATH
     
 ... and try to write-access your `PATH`. You should be able to get an error message, *i.e.* `-EACCESS` errno.
