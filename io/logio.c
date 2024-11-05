@@ -25,7 +25,7 @@ void defer(struct work_struct *work)
 		goto tail;
 	}
 
-	snprintf(out, sizeof(out), "%d\t%d\t%u\t%u\t%s\t%s",
+	snprintf(out, sizeof(out), "%d\t%d\t%u\t%u\t%s\t%s\n",
 		 log_dataset_inst->tgid, log_dataset_inst->tid,
 		 log_dataset_inst->uid, log_dataset_inst->euid,
 		 log_dataset_inst->prog_path, hash);
