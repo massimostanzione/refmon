@@ -11,7 +11,6 @@
 int _set_state(char *new_state)
 {
 	int ret = REFMON_RETVAL_DEFAULT;
-	SPIN_INSTANCE_LOCK
 	the_instance.state = string_to_state(new_state);
 	ret = probing_update(
 		is_on()); // il controllo lo faccio sullo stato già cambiato
@@ -22,7 +21,6 @@ int _set_state(char *new_state)
 	}
 	ret = 0;
 tail:
-	SPIN_INSTANCE_UNLOCK
 	return ret;
 }
 
@@ -108,9 +106,7 @@ int _add_file(char *path)
 	node->registered = registered;
 	node->resolved = resolved;
 
-	SPIN_INSTANCE_LOCK
 	list_add_tail(&node->registry_noderef, &the_instance.registry);
-	SPIN_INSTANCE_UNLOCK
 	ret = 0;
 tail:
 	return ret;
@@ -119,7 +115,7 @@ tail:
 int do_set_state(char __user *new_state)
 {
 	int ret = REFMON_RETVAL_DEFAULT;
-	
+	SPIN_INSTANCE_LOCK
 	pr_debug("%s: _set_state, param: %s", REFMON_MODNAME, new_state);
 
 	ret = safety_checks(REFMON_SAFETY_CHECK_ROOT, NULL);
@@ -139,6 +135,7 @@ int do_set_state(char __user *new_state)
 	}
 	ret = 0;
 tail:
+	SPIN_INSTANCE_UNLOCK
 	return ret;
 }
 
@@ -146,6 +143,8 @@ int do_reconf_add(char __user *path_in, char __user *password_in)
 {
 	int ret = REFMON_RETVAL_DEFAULT;
 	char *safe_path;
+	
+	SPIN_INSTANCE_LOCK
 	
 	pr_debug("%s: do_reconf_add, params: %s %s", REFMON_MODNAME, path_in,
 		 password_in);
@@ -174,6 +173,7 @@ int do_reconf_add(char __user *path_in, char __user *password_in)
 	pr_info("%s: path added (path='%s')", REFMON_MODNAME, safe_path);
 	ret = 0;
 tail:
+	SPIN_INSTANCE_UNLOCK
 	return ret;
 }
 
@@ -182,7 +182,9 @@ int do_reconf_rm(char __user *path_in, char __user *password_in)
 	char *safe_path = NULL;
 	int ret = REFMON_RETVAL_DEFAULT;
 	struct registry_entry *found;
-	
+
+	SPIN_INSTANCE_LOCK
+
 	pr_debug("%s: do_reconf_rm, params: %s %s", REFMON_MODNAME, path_in,
 		 password_in);
 	ret = safety_checks(REFMON_SAFETY_CHECK_ROOT |
@@ -210,14 +212,13 @@ int do_reconf_rm(char __user *path_in, char __user *password_in)
 		goto tail;
 	}
 
-	SPIN_INSTANCE_LOCK
 	list_del(&found->registry_noderef);
-	SPIN_INSTANCE_UNLOCK
 
 	pr_info("%s: removed path %s", REFMON_MODNAME, safe_path);
 	ret = 0;
 tail:
 	FREE(safe_path);
+	SPIN_INSTANCE_UNLOCK
 	return ret;
 }
 
@@ -226,7 +227,7 @@ int do_flush_registry(char __user *password)
 {
 	int ret = REFMON_RETVAL_DEFAULT;
 	struct registry_entry *node, *node_aux;
-	
+	SPIN_INSTANCE_LOCK
 	pr_debug("%s: do_flush_registry, params: %s", REFMON_MODNAME, password);
 	ret = safety_checks(REFMON_SAFETY_CHECK_ROOT |
 				    REFMON_SAFETY_CHECK_RECONF |
@@ -238,7 +239,6 @@ int do_flush_registry(char __user *password)
 
 	if (list_empty(&the_instance.registry)) {
 		pr_info("%s: empty list, skipping...", REFMON_MODNAME);
-		SPIN_INSTANCE_UNLOCK
 		ret = 0;
 		goto tail;
 	}
@@ -253,5 +253,6 @@ int do_flush_registry(char __user *password)
 	pr_info("%s: register flushed", REFMON_MODNAME);
 	ret = 0;
 tail:
+	SPIN_INSTANCE_UNLOCK
 	return ret;
 }
