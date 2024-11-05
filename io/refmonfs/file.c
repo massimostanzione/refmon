@@ -8,54 +8,67 @@
 #include <linux/slab.h>
 #include <linux/string.h>
 #include <linux/uio.h>
-
+#include <linux/mutex.h>
 #include "singlefilefs.h"
 #include "../../misc/fsutils.h"
 #include "../files.h"
 
+#define REFMONFS_MUTEX_LOCK mutex_lock(&refmonfs_mutex);
+#define REFMONFS_MUTEX_UNLOCK mutex_unlock(&refmonfs_mutex);
 
-ssize_t onefilefs_read(struct file * filp, char __user * buf, size_t len, loff_t * off) {
+static DEFINE_MUTEX(refmonfs_mutex);
 
-    struct buffer_head *bh = NULL;
-    struct inode * the_inode = filp->f_inode;
-    uint64_t file_size = the_inode->i_size;
-    int ret;
-    loff_t offset;
-    int block_to_read;//index of the block to be read from device
+ssize_t onefilefs_read(struct file *filp, char __user *buf, size_t len,
+		       loff_t *off)
+{
+	struct buffer_head *bh = NULL;
+	struct inode *the_inode = filp->f_inode;
+	uint64_t file_size;
+	int ret;
+	loff_t offset;
+	int block_to_read; //index of the block to be read from device
 
-    printk("%s: read operation called with len %ld - and offset %lld (the current file size is %lld)",REFMONFS_MODNAME, len, *off, file_size);
+	if (filp == NULL) {
+		printk("%s: invalid file pointer provided", REFMONFS_MODNAME);
+		return len;
+	}
 
-    //this operation is not synchronized 
-    //*off can be changed concurrently 
-    //add synchronization if you need it for any reason
+	REFMONFS_MUTEX_LOCK
 
-    //check that *off is within boundaries
-    if (*off >= file_size)
-        return 0;
-    else if (*off + len > file_size)
-        len = file_size - *off;
+	file_size = the_inode->i_size;
 
-    //determine the block level offset for the operation
-    offset = *off % DEFAULT_BLOCK_SIZE; 
-    //just read stuff in a single block - residuals will be managed at the applicatin level
-    if (offset + len > DEFAULT_BLOCK_SIZE)
-        len = DEFAULT_BLOCK_SIZE - offset;
+	printk("%s: read operation called with len %ld - and offset %lld (the current file size is %lld)",
+	       REFMONFS_MODNAME, len, *off, file_size);
 
-    //compute the actual index of the the block to be read from device
-    block_to_read = *off / DEFAULT_BLOCK_SIZE + DEFAULT_INO_SIZE; //the value 2 accounts for superblock and file-inode on device
-    
-    printk("%s: read operation must access block %d of the device",REFMONFS_MODNAME, block_to_read);
+	//check that *off is within boundaries
+	if (*off >= file_size) {
+		REFMONFS_MUTEX_UNLOCK return 0;
+	} else if (*off + len > file_size)
+		len = file_size - *off;
 
-    bh = (struct buffer_head *)sb_bread(filp->f_path.dentry->d_inode->i_sb, block_to_read);
-    if(!bh){
-	return -EIO;
-    }
-    ret = copy_to_user(buf,bh->b_data + offset, len);
-    *off += (len - ret);
-    brelse(bh);
+	//determine the block level offset for the operation
+	offset = *off % DEFAULT_BLOCK_SIZE;
+	//just read stuff in a single block - residuals will be managed at the applicatin level
+	if (offset + len > DEFAULT_BLOCK_SIZE)
+		len = DEFAULT_BLOCK_SIZE - offset;
 
-    return len - ret;
+	//compute the actual index of the the block to be read from device
+	block_to_read = *off / DEFAULT_BLOCK_SIZE + DEFAULT_INO_SIZE;
 
+	printk("%s: read operation must access block %d of the device",
+	       REFMONFS_MODNAME, block_to_read);
+
+	bh = (struct buffer_head *)sb_bread(filp->f_path.dentry->d_inode->i_sb,
+					    block_to_read);
+	if (!bh) {
+		REFMONFS_MUTEX_UNLOCK
+		return -EIO;
+	}
+	ret = copy_to_user(buf, bh->b_data + offset, len);
+	*off += (len - ret);
+	brelse(bh);
+	REFMONFS_MUTEX_UNLOCK
+	return len - ret;
 }
 
 /**
@@ -65,67 +78,67 @@ ssize_t onefilefs_read(struct file * filp, char __user * buf, size_t len, loff_t
  */
 static ssize_t onefilefs_write_async(struct kiocb *iocb, struct iov_iter *iter)
 {
-    struct buffer_head *bh = NULL;
-    struct inode *the_inode = iocb->ki_filp->f_inode;
-    uint64_t file_size = the_inode->i_size;
-    int block_to_write;
-    loff_t offset, block_offset;
-    size_t out_size, copied;
-    char *buf;
+	struct buffer_head *bh = NULL;
+	struct file *filp = iocb->ki_filp;
+	struct inode *the_inode = filp->f_inode;
+	uint64_t file_size;
+	int block_to_write, spare_space;
+	loff_t offset, block_offset;
+	size_t out_size, to_be_written;
 
-    printk("%s: write (async) operation called with count %zu - and offset %lld (the current file size is %lld)",
-           REFMONFS_MODNAME, iov_iter_count(iter), iocb->ki_pos, file_size);
+	if (filp == NULL) {
+		printk("%s: invalid file pointer provided", REFMONFS_MODNAME);
+		return iter->count;
+	}
 
+	REFMONFS_MUTEX_LOCK
+	file_size = i_size_read(the_inode);
 
-    offset = file_size;
-    out_size = iov_iter_count(iter);
+	printk("%s: write (async) operation called with count %zu - and offset %lld (the current file size is %lld)",
+	       REFMONFS_MODNAME, iov_iter_count(iter), iocb->ki_pos, file_size);
 
-    out_size += 1;
+	to_be_written = iter->kvec->iov_len;
+	offset = file_size;
 
-    block_offset = offset % DEFAULT_BLOCK_SIZE;
+	block_offset = offset % DEFAULT_BLOCK_SIZE;
+	block_to_write = offset / DEFAULT_BLOCK_SIZE + DEFAULT_INO_SIZE;
+	spare_space = DEFAULT_BLOCK_SIZE - block_offset;
 
-    block_to_write = offset / DEFAULT_BLOCK_SIZE + DEFAULT_INO_SIZE;
+	// if there is not enough spare space into the block, write to the subsequent one
+	if (spare_space <= to_be_written) {
+		bh = sb_bread(the_inode->i_sb, block_to_write);
+		if (bh == NULL) {
+			pr_err("%s: error while trying to read buffer head for the indexed block (new one)",
+			       REFMONFS_MODNAME);
+			REFMONFS_MUTEX_UNLOCK
+			return -EIO;
+		}
+		brelse(bh);
+		offset += spare_space;
+		block_offset = 0;
+		block_to_write++;
+	}
 
-    printk("%s: (async-)write operation must access block %d of the device",
-           REFMONFS_MODNAME, block_to_write);
+	bh = sb_bread(the_inode->i_sb, block_to_write);
+	if (bh == NULL) {
+		pr_err("%s: error while trying to read buffer head for the indexed block",
+		       REFMONFS_MODNAME);
+		REFMONFS_MUTEX_UNLOCK
+		return -EIO;
+	}
 
-    bh = sb_bread(iocb->ki_filp->f_path.dentry->d_inode->i_sb, block_to_write);
-    if (bh == NULL) {
-        pr_err("%s: error while trying to read buffer head for the indexed block",
-               REFMONFS_MODNAME);
-        return -EIO;
-    }
+	memcpy(bh->b_data + block_offset, iter->kvec->iov_base, to_be_written);
+	mark_buffer_dirty(bh);
 
-    buf = kmalloc(out_size, GFP_KERNEL);
-    if (buf == NULL) {
-        pr_err("%s: error while trying to kmalloc", REFMONFS_MODNAME);
-        brelse(bh);
-        return -ENOMEM;
-    }
+	if (offset + to_be_written > file_size)
+		i_size_write(the_inode, offset + to_be_written);
 
-    copied = copy_from_iter(buf, out_size - 1, iter);
-    if (copied != out_size - 1) {
-        pr_err("%s: failed to copy %zu bytes from iov_iter\n", REFMONFS_MODNAME, out_size - 1);
-        kfree(buf);
-        brelse(bh);
-        return -EFAULT;
-    }
-
-    buf[out_size - 1] = '\n';
-
-    memcpy(bh->b_data + block_offset, buf, out_size);
-    mark_buffer_dirty(bh);
-
-    if (offset + out_size > file_size)
-        i_size_write(the_inode, offset + out_size);
-
-    iocb->ki_pos = offset + out_size;
-
-    brelse(bh);
-    kfree(buf);
-    return out_size;
+	block_offset += to_be_written;
+	filp->f_pos = offset;
+	brelse(bh);
+	REFMONFS_MUTEX_UNLOCK
+	return out_size;
 }
-
 
 struct dentry *onefilefs_lookup(struct inode *parent_inode, struct dentry *child_dentry, unsigned int flags) {
 
