@@ -13,6 +13,7 @@ int probing_off(void)
 	ret = REFMON_RETVAL_DEFAULT;
 
 	disable_kretprobe(&krp_vfs_open);
+	disable_kretprobe(&krp_filp_open);
 	disable_kretprobe(&krp_vfs_unlink);
 	disable_kretprobe(&krp_vfs_mkdir);
 	disable_kretprobe(&krp_vfs_rmdir);
@@ -30,6 +31,7 @@ int probing_on(void)
 	ret = REFMON_RETVAL_DEFAULT;
 
 	enable_kretprobe(&krp_vfs_open);
+	enable_kretprobe(&krp_filp_open);
 	enable_kretprobe(&krp_vfs_unlink);
 	enable_kretprobe(&krp_vfs_mkdir);
 	enable_kretprobe(&krp_vfs_rmdir);
@@ -66,7 +68,14 @@ int init_probes(void)
 
 	ret = register_kretprobe(&krp_vfs_open);
 	if (ret < 0) {
-		pr_err("%s: error while trying to register kretprobe handler(probed=OPEN, ret=%d)",
+		pr_err("%s: error while trying to register kretprobe handler(probed=VFS_OPEN, ret=%d)",
+		       REFMON_MODNAME, ret);
+		goto tail;
+	}
+
+	ret = register_kretprobe(&krp_filp_open);
+	if (ret < 0) {
+		pr_err("%s: error while trying to register kretprobe handler(probed=FILP_OPEN, ret=%d)",
 		       REFMON_MODNAME, ret);
 		goto tail;
 	}
@@ -106,6 +115,7 @@ void flush_probes(void)
 	 */
 
 	unregister_kretprobe(&krp_vfs_open);
+	unregister_kretprobe(&krp_filp_open);
 	unregister_kretprobe(&krp_vfs_unlink);
 	unregister_kretprobe(&krp_vfs_mkdir);
 	unregister_kretprobe(&krp_vfs_rmdir);

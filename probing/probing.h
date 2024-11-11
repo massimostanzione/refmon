@@ -11,8 +11,8 @@
 #define PROBING_STATE_ON 1
 extern int probing_state;
 
-extern struct kretprobe krp_vfs_open, krp_vfs_write, krp_vfs_unlink,
-	krp_vfs_mkdir, krp_vfs_rmdir, krp_vfs_fsync, krp_sec_ino_create;
+extern struct kretprobe krp_vfs_open, krp_filp_open, krp_vfs_unlink,
+	krp_vfs_mkdir, krp_vfs_rmdir;
 
  int krp_hook_open(struct kretprobe_instance *ri, struct pt_regs *regs);
  int krp_hook_rm(struct kretprobe_instance *ri, struct pt_regs *regs);

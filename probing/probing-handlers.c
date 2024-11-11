@@ -185,6 +185,13 @@ struct kretprobe krp_vfs_open = { .kp.symbol_name = "vfs_open",
 				  .maxactive = REFMON_PROBES_NO,
 				  .kp.flags = KPROBE_FLAG_DISABLED };
 
+struct kretprobe krp_filp_open = { .kp.symbol_name = "filp_open",
+				  .entry_handler =
+					  (kretprobe_handler_t)krp_hook_open,
+				  .handler = (kretprobe_handler_t)krp_hook_tail,
+				  .maxactive = REFMON_PROBES_NO,
+				  .kp.flags = KPROBE_FLAG_DISABLED };
+
 struct kretprobe krp_vfs_unlink = {
 	.kp.symbol_name = "may_delete",
 	.entry_handler = (kretprobe_handler_t)krp_hook_rm,
